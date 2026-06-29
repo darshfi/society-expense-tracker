@@ -21,6 +21,7 @@ export default function SettingsScreen() {
   const [username, setUsername] = useState('')
   const [displayUsername, setDisplayUsername] = useState('')
   const [savingUsername, setSavingUsername] = useState(false)
+  const [role, setRole] = useState<string | null>(null)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -31,9 +32,21 @@ export default function SettingsScreen() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  // Admin section state
+  const [users, setUsers] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [showCreateUser, setShowCreateUser] = useState(false)
+  const [newUsername, setNewUsername] = useState('')
+  const [newPasswordField, setNewPasswordField] = useState('')
+  const [newDisplayName, setNewDisplayName] = useState('')
+  const [creatingUser, setCreatingUser] = useState(false)
+
   useEffect(() => {
     loadUser()
   }, [])
+
+  const EDGE_FUNCTION_URL = 'https://siigtinwowbnguxpwhfv.supabase.co/functions/v1/manage-user'
 
   const loadUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -42,6 +55,16 @@ export default function SettingsScreen() {
       const name = user.user_metadata?.display_name || (user.email ? user.email.split('@')[0] : '')
       setDisplayUsername(name)
       setUsername(name)
+
+      // Fetch role from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (profile?.role) {
+        setRole(profile.role)
+      }
     }
   }
 
@@ -158,6 +181,92 @@ export default function SettingsScreen() {
   const handleResetToCurrentMonth = () => {
     // Navigate to the main expenses tab — already the default home
     router.push('/(protected)' as any)
+  }
+
+  // --- Admin: Manage Users ---
+
+  const loadUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      const { data } = await supabase.from('profiles').select('id, display_name, auth_email, role, created_at').order('created_at')
+      if (data) setUsers(data)
+    } catch (err) {
+      console.error('Failed to load users:', err)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleCreateUser = async () => {
+    if (!newUsername.trim()) { Alert.alert('Missing username', 'Enter a username.'); return }
+    if (!newPasswordField || newPasswordField.length < 6) { Alert.alert('Weak password', 'Password must be at least 6 characters.'); return }
+
+    setCreatingUser(true)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
+      if (!token) { Alert.alert('Error', 'Not authenticated.'); return }
+
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          username: newUsername.trim(),
+          password: newPasswordField,
+          displayName: newDisplayName.trim() || newUsername.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { Alert.alert('Error', data.error || 'Failed to create user'); return }
+
+      Alert.alert('User created', `Account created for ${newUsername.trim()}`)
+      setNewUsername('')
+      setNewPasswordField('')
+      setNewDisplayName('')
+      setShowCreateUser(false)
+      loadUsers() // refresh list
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not create user')
+    } finally {
+      setCreatingUser(false)
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, displayName: string) => {
+    const confirmMsg = `Remove user "${displayName}"? This cannot be undone.`
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(confirmMsg)
+      : await new Promise((resolve) => {
+          Alert.alert('Remove user', confirmMsg, [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+          ])
+        })
+
+    if (!confirmed) return
+
+    setDeletingUserId(userId)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
+      if (!token) { Alert.alert('Error', 'Not authenticated.'); return }
+
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', userId }),
+      })
+      const data = await res.json()
+      if (!res.ok) { Alert.alert('Error', data.error || 'Failed to delete user'); return }
+
+      Alert.alert('User removed', `Account has been deleted.`)
+      loadUsers() // refresh list
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not delete user')
+    } finally {
+      setDeletingUserId(null)
+    }
   }
 
   return (
@@ -311,6 +420,102 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Admin: Manage Users — only visible to admins */}
+        {role === 'admin' && (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Manage Users</Text>
+            <View style={[styles.card, { backgroundColor: theme.surface }]}>
+              <Pressable
+                style={[styles.button, { backgroundColor: theme.accent, marginBottom: 12 }]}
+                onPress={() => { loadUsers(); setShowCreateUser(!showCreateUser) }}
+              >
+                <Text style={styles.buttonText}>
+                  {showCreateUser ? 'Cancel' : 'Create new user'}
+                </Text>
+              </Pressable>
+
+              {/* Create user form */}
+              {showCreateUser && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Username</Text>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+                    value={newUsername}
+                    onChangeText={setNewUsername}
+                    placeholder="login username"
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Display name (optional)</Text>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+                    value={newDisplayName}
+                    onChangeText={setNewDisplayName}
+                    placeholder="shown in app"
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Temporary password</Text>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+                    value={newPasswordField}
+                    onChangeText={setNewPasswordField}
+                    placeholder="at least 6 characters"
+                    placeholderTextColor={theme.textMuted}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    spellCheck={false}
+                  />
+                  <Pressable
+                    style={[styles.button, { backgroundColor: theme.accent }, creatingUser && { opacity: 0.6 }]}
+                    onPress={handleCreateUser}
+                    disabled={creatingUser}
+                  >
+                    {creatingUser ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.buttonText}>Create account</Text>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Users list */}
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Existing users</Text>
+              {loadingUsers ? (
+                <ActivityIndicator size="small" color={theme.accent} style={{ marginVertical: 12 }} />
+              ) : users.length === 0 ? (
+                <Text style={[styles.label, { color: theme.textMuted }]}>No users loaded.</Text>
+              ) : (
+                users.map((u) => (
+                  <View key={u.id} style={[styles.userRow, { borderBottomColor: theme.borderLight }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.userName, { color: theme.text }]}>{u.display_name || u.auth_email}</Text>
+                      <Text style={[styles.userEmail, { color: theme.textMuted }]}>{u.auth_email} — {u.role}</Text>
+                    </View>
+                    <Pressable
+                      style={[styles.deleteButton, deletingUserId === u.id && { opacity: 0.5 }]}
+                      onPress={() => handleDeleteUser(u.id, u.display_name || u.auth_email)}
+                      disabled={deletingUserId === u.id}
+                    >
+                      {deletingUserId === u.id ? (
+                        <ActivityIndicator size="small" color={theme.destructive} />
+                      ) : (
+                        <Text style={[styles.deleteButtonText, { color: theme.destructive }]}>
+                          {u.role === 'admin' ? '—' : 'Remove'}
+                        </Text>
+                      )}
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </View>
+          </>
+        )}
+
         {/* Logout — distinct section */}
         <View style={styles.logoutSection}>
           <Pressable
@@ -368,6 +573,15 @@ const styles = StyleSheet.create({
   themeOptions: { flexDirection: 'row', gap: 8 },
   themeOption: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1 },
   themeOptionText: { fontSize: 14, fontWeight: '600' },
+
+  userRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  userName: { fontSize: 14, fontWeight: '600' },
+  userEmail: { fontSize: 11, marginTop: 2 },
+  deleteButton: { paddingHorizontal: 12, paddingVertical: 6 },
+  deleteButtonText: { fontSize: 13, fontWeight: '600' },
 
   logoutSection: { marginTop: 20, alignItems: 'center' },
   logoutButton: {

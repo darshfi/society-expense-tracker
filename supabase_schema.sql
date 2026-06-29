@@ -163,6 +163,7 @@ create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text unique,
   auth_email text not null,
+  role text not null default 'member' check (role in ('admin', 'member')),
   created_at timestamptz not null default now()
 );
 
@@ -182,9 +183,9 @@ create policy "Users can manage their own profile"
   with check (auth.uid() = id);
 
 -- ============================================================
--- NOTE ON FUTURE ADMIN ROLES
--- If you later want dad to have special permissions (e.g. only he
--- can delete entries), add a `role` column to the `profiles` table
--- linked to auth.users, and change the "delete" policies above to
--- check that role. Not needed for now since everyone has equal access.
+-- NOTE ON ADMIN ROLES
+-- The `role` column on `profiles` (admin/member) is enforced
+-- server-side by the user-management Edge Function. RLS on
+-- expenses/categories/bill_files remains unchanged — everyone
+-- has equal access there regardless of role.
 -- ============================================================
