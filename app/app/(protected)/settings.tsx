@@ -14,8 +14,6 @@ import { supabase } from '../../lib/supabase'
 import { useTheme } from '../../lib/ThemeContext'
 import ScreenLayout from '../../components/ScreenLayout'
 
-const FAKE_EMAIL_DOMAIN = '@society-tracker.local'
-
 export default function SettingsScreen() {
   const router = useRouter()
   const { theme, themeMode, setThemeMode, resolvedScheme } = useTheme()
@@ -28,21 +26,26 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
 
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   useEffect(() => {
     loadUser()
   }, [])
 
   const loadUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (user?.email) {
-      const name = user.email.split('@')[0]
+    if (user) {
+      // Use display_name from user_metadata, fall back to extracting from email
+      const name = user.user_metadata?.display_name || (user.email ? user.email.split('@')[0] : '')
       setDisplayUsername(name)
       setUsername(name)
     }
   }
 
   const handleChangeUsername = async () => {
-    const trimmed = username.trim().toLowerCase()
+    const trimmed = username.trim()
     if (!trimmed) {
       Alert.alert('Missing username', 'Please enter a username.')
       return
@@ -51,15 +54,13 @@ export default function SettingsScreen() {
 
     setSavingUsername(true)
     try {
-      const newEmail = `${trimmed}${FAKE_EMAIL_DOMAIN}`
-      const { error } = await supabase.auth.updateUser({ email: newEmail })
+      const { error } = await supabase.auth.updateUser({
+        data: { display_name: trimmed },
+      })
       if (error) {
         Alert.alert('Error', error.message)
       } else {
-        Alert.alert(
-          'Verification email sent',
-          'Check your email to confirm the change. Your session will update after confirmation.'
-        )
+        Alert.alert('Username updated', 'Your display name has been updated.')
         setDisplayUsername(trimmed)
       }
     } catch (err) {
@@ -178,34 +179,76 @@ export default function SettingsScreen() {
 
           {/* Change password */}
           <Text style={[styles.label, { color: theme.textSecondary }]}>Current password</Text>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            secureTextEntry
-            placeholder="Enter current password"
-            placeholderTextColor={theme.textMuted}
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.passwordInput, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry={!showCurrentPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              placeholder="Enter current password"
+              placeholderTextColor={theme.textMuted}
+            />
+            <Pressable
+              style={[styles.eyeButton, { backgroundColor: theme.bg, borderColor: theme.border }]}
+              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+              hitSlop={8}
+            >
+              <Text style={[styles.eyeIcon, { color: theme.textMuted }]}>
+                {showCurrentPassword ? '👁' : '👁‍🗨'}
+              </Text>
+            </Pressable>
+          </View>
 
           <Text style={[styles.label, { color: theme.textSecondary }]}>New password</Text>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-            placeholder="At least 6 characters"
-            placeholderTextColor={theme.textMuted}
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.passwordInput, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!showNewPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              placeholder="At least 6 characters"
+              placeholderTextColor={theme.textMuted}
+            />
+            <Pressable
+              style={[styles.eyeButton, { backgroundColor: theme.bg, borderColor: theme.border }]}
+              onPress={() => setShowNewPassword(!showNewPassword)}
+              hitSlop={8}
+            >
+              <Text style={[styles.eyeIcon, { color: theme.textMuted }]}>
+                {showNewPassword ? '👁' : '👁‍🗨'}
+              </Text>
+            </Pressable>
+          </View>
 
           <Text style={[styles.label, { color: theme.textSecondary }]}>Confirm new password</Text>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            placeholder="Re-enter new password"
-            placeholderTextColor={theme.textMuted}
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.passwordInput, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              placeholder="Re-enter new password"
+              placeholderTextColor={theme.textMuted}
+            />
+            <Pressable
+              style={[styles.eyeButton, { backgroundColor: theme.bg, borderColor: theme.border }]}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              hitSlop={8}
+            >
+              <Text style={[styles.eyeIcon, { color: theme.textMuted }]}>
+                {showConfirmPassword ? '👁' : '👁‍🗨'}
+              </Text>
+            </Pressable>
+          </View>
 
           <Pressable
             style={[styles.button, { backgroundColor: theme.accent }, savingPassword && { opacity: 0.6 }]}
@@ -281,6 +324,21 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 15,
     marginBottom: 10,
+  },
+  passwordRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 10,
+  },
+  passwordInput: {
+    flex: 1, borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 15,
+    borderTopRightRadius: 0, borderBottomRightRadius: 0,
+  },
+  eyeButton: {
+    borderWidth: 1, borderLeftWidth: 0, borderRadius: 12,
+    borderTopLeftRadius: 0, borderBottomLeftRadius: 0,
+    paddingHorizontal: 12, height: 44, justifyContent: 'center',
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   button: {
     paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12,

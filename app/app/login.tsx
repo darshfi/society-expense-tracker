@@ -12,6 +12,7 @@ export default function LoginScreen() {
   const { theme, resolvedScheme } = useTheme()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const [hasSession, setHasSession] = useState(false)
@@ -99,17 +100,31 @@ export default function LoginScreen() {
           />
 
           <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
-            placeholder="Your password"
-            placeholderTextColor={theme.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            returnKeyType="go"
-            onSubmitEditing={handleLogin}
-            editable={!loading}
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.passwordInput, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
+              placeholder="Your password"
+              placeholderTextColor={theme.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+              editable={!loading}
+            />
+            <Pressable
+              style={[styles.eyeButton, { backgroundColor: theme.bg, borderColor: theme.border }]}
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={8}
+            >
+              <Text style={[styles.eyeIcon, { color: theme.textMuted }]}>
+                {showPassword ? '👁' : '👁‍🗨'}
+              </Text>
+            </Pressable>
+          </View>
 
           <Pressable
             style={[styles.loginButton, { backgroundColor: theme.accent }, loading && { opacity: 0.6 }]}
@@ -167,6 +182,21 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
     marginBottom: 14,
+  },
+  passwordRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 14,
+  },
+  passwordInput: {
+    flex: 1, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16,
+    borderTopRightRadius: 0, borderBottomRightRadius: 0,
+  },
+  eyeButton: {
+    borderWidth: 1, borderLeftWidth: 0, borderRadius: 12,
+    borderTopLeftRadius: 0, borderBottomLeftRadius: 0,
+    paddingHorizontal: 12, height: 50, justifyContent: 'center',
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   loginButton: {
     paddingVertical: 14,
