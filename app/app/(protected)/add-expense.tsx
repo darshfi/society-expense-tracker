@@ -402,7 +402,7 @@ export default function AddExpenseScreen() {
 
   if (initialLoading) {
     return (
-      <ScreenLayout hideTabBar>
+      <ScreenLayout>
         <View style={[styles.centerContainer, { backgroundColor: theme.bg }]}>
           <ActivityIndicator size="large" color={theme.accent} />
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading expense data…</Text>
@@ -417,7 +417,7 @@ export default function AddExpenseScreen() {
   ]
 
   return (
-    <ScreenLayout hideTabBar>
+    <ScreenLayout>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.headerBar, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
         <Pressable style={styles.headerBack} onPress={() => router.back()}>

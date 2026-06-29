@@ -23,24 +23,31 @@ export default function TabBar() {
   const pathname = usePathname()
   const { theme } = useTheme()
 
+  // Auto-hide on screens that shouldn't show the tab bar
+  if (
+    pathname.startsWith('/add-expense') ||
+    pathname.startsWith('/expense-detail/')
+  ) {
+    return null
+  }
+
   const isActive = (tab: TabItem) => {
     if (tab.key === 'index') {
       return pathname === '/'
     }
     if (tab.isAdd) return false
-    return pathname.includes(tab.route.replace('/(protected)', ''))
+    const suffix = tab.route.replace('/(protected)', '')
+    return suffix ? pathname.includes(suffix) : false
   }
 
   const handlePress = (tab: TabItem) => {
-    if (tab.isAdd) {
-      router.push(tab.route)
-      return
-    }
+    // Guard: don't re-navigate if already on this tab (avoid accidental refresh)
+    if (!tab.isAdd && isActive(tab)) return
     router.push(tab.route as any)
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surfaceSecondary, borderTopColor: theme.border }]}>
+    <View testID="TabBarContainer" style={[styles.container, { backgroundColor: theme.surfaceSecondary, borderTopColor: theme.border }]}>
       {TABS.map((tab) => {
         const active = isActive(tab)
         if (tab.isAdd) {

@@ -148,6 +148,9 @@ export default function SummaryScreen() {
         {/* Page title */}
         <View style={[styles.pageTitleBar, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
           <Text style={[styles.pageTitle, { color: theme.text }]}>Summary</Text>
+          <Pressable onPress={fetchMonthData} style={styles.refreshButton}>
+            <Text style={[styles.refreshIcon, { color: theme.accent }]}>↻</Text>
+          </Pressable>
         </View>
 
         {/* Month navigation */}
@@ -262,11 +265,18 @@ const styles = StyleSheet.create({
   contentContainer: { padding: 16, paddingBottom: 20 },
 
   pageTitleBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginHorizontal: -16, marginTop: -16, marginBottom: 16,
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1,
   },
   pageTitle: {
+    fontSize: 22, fontWeight: 'bold',
+  },
+  refreshButton: {
+    padding: 6,
+  },
+  refreshIcon: {
     fontSize: 22, fontWeight: 'bold',
   },
 

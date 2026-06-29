@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { View, ActivityIndicator } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { useTheme } from '../../lib/ThemeContext'
+import TabBar from '../../components/TabBar'
 
 export default function ProtectedLayout() {
   const [isLoading, setIsLoading] = useState(true)
@@ -29,13 +30,16 @@ export default function ProtectedLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 300 }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="summary" />
-      <Stack.Screen name="calendar" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="add-expense" />
-      <Stack.Screen name="expense-detail/[expenseId]" options={{ animation: 'fade' }} />
-    </Stack>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 300 }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="summary" />
+        <Stack.Screen name="calendar" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="add-expense" />
+        <Stack.Screen name="expense-detail/[expenseId]" />
+      </Stack>
+      <TabBar />
+    </View>
   )
 }

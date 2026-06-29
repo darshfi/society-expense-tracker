@@ -95,6 +95,9 @@ export default function ExpenseListScreen() {
         {/* Page title */}
         <View style={[styles.pageTitleBar, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
           <Text style={[styles.pageTitle, { color: theme.text }]}>Expenses</Text>
+          <Pressable onPress={fetchExpenses} style={styles.refreshButton}>
+            <Text style={[styles.refreshIcon, { color: theme.accent }]}>↻</Text>
+          </Pressable>
         </View>
         <FlatList
           data={dates}
@@ -170,9 +173,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pageTitleBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,
   },
   pageTitle: {
+    fontSize: 22, fontWeight: 'bold',
+  },
+  refreshButton: {
+    padding: 6,
+  },
+  refreshIcon: {
     fontSize: 22, fontWeight: 'bold',
   },
   listContent: {

@@ -197,7 +197,7 @@ export default function ExpenseDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenLayout hideTabBar>
+      <ScreenLayout>
         <View style={[styles.centerContainer, { backgroundColor: theme.bg }]}>
           <ActivityIndicator size="large" color={theme.accent} />
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading expense…</Text>
@@ -208,7 +208,7 @@ export default function ExpenseDetailScreen() {
 
   if (!expense) {
     return (
-      <ScreenLayout hideTabBar>
+      <ScreenLayout>
         <View style={[styles.centerContainer, { backgroundColor: theme.bg }]}>
           <Text style={[styles.errorText, { color: theme.destructive }]}>Expense not found.</Text>
         </View>
@@ -217,7 +217,7 @@ export default function ExpenseDetailScreen() {
   }
 
   return (
-    <ScreenLayout hideTabBar>
+    <ScreenLayout>
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       <View style={[styles.headerBar, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
