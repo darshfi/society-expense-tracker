@@ -6,7 +6,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" />
-        <Stack.Screen name="(protected)" />
+        <Stack.Screen name="(protected)" options={{ animation: 'fade_from_bottom', animationDuration: 300 }} />
       </Stack>
     </ThemeProvider>
   )

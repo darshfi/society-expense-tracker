@@ -29,13 +29,13 @@ export default function ProtectedLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 300 }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="summary" />
       <Stack.Screen name="calendar" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="add-expense" />
-      <Stack.Screen name="expense-detail/[expenseId]" />
+      <Stack.Screen name="expense-detail/[expenseId]" options={{ animation: 'fade' }} />
     </Stack>
   )
 }
