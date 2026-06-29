@@ -18,7 +18,12 @@ const TABS: TabItem[] = [
   { key: 'settings', label: 'Settings', icon: '⚙️', route: '/(protected)/settings' },
 ]
 
-export default function TabBar() {
+interface TabBarProps {
+  /** Called before tab navigation so the layout can set the correct animation direction */
+  onTabNavigate?: (route: string, isAdd: boolean) => void
+}
+
+export default function TabBar({ onTabNavigate }: TabBarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { theme } = useTheme()
@@ -43,7 +48,12 @@ export default function TabBar() {
   const handlePress = (tab: TabItem) => {
     // Guard: don't re-navigate if already on this tab (avoid accidental refresh)
     if (!tab.isAdd && isActive(tab)) return
-    router.push(tab.route as any)
+    // Use layout's navigate handler so it can set animation direction first
+    if (onTabNavigate) {
+      onTabNavigate(tab.route, !!tab.isAdd)
+    } else {
+      router.push(tab.route as any)
+    }
   }
 
   return (

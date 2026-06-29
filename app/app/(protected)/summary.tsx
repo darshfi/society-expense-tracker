@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
 
   pageTitleBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginHorizontal: -16, marginTop: -16, marginBottom: 16,
+    marginHorizontal: -16, marginBottom: 16,
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1,
   },

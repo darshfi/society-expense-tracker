@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   pageTitleBar: {
-    marginHorizontal: -16, marginTop: -16, marginBottom: 16,
+    marginHorizontal: -16, marginBottom: 16,
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1,
   },
