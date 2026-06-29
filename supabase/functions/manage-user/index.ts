@@ -140,6 +140,38 @@ serve(async (req) => {
       })
     }
 
+    // --- ACTION: update-role ---
+    if (action === 'update-role') {
+      const { userId, role: newRole } = body
+      if (!userId || !['admin', 'member'].includes(newRole)) {
+        return new Response(JSON.stringify({ error: 'Valid userId and role (admin/member) are required' }), {
+          status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Don't allow demoting yourself
+      if (userId === caller.id && newRole !== 'admin') {
+        return new Response(JSON.stringify({ error: 'Cannot remove your own admin role' }), {
+          status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const { error: updateError } = await serviceClient
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId)
+
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200, headers: { ...headers, 'Content-Type': 'application/json' },
+      })
+    }
+
     return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
       status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
     })

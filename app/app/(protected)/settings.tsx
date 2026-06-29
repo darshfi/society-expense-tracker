@@ -22,6 +22,7 @@ export default function SettingsScreen() {
   const [displayUsername, setDisplayUsername] = useState('')
   const [savingUsername, setSavingUsername] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -46,6 +47,10 @@ export default function SettingsScreen() {
     loadUser()
   }, [])
 
+  useEffect(() => {
+    if (role === 'admin') loadUsers()
+  }, [role])
+
   const EDGE_FUNCTION_URL = 'https://siigtinwowbnguxpwhfv.supabase.co/functions/v1/manage-user'
 
   const loadUser = async () => {
@@ -55,6 +60,8 @@ export default function SettingsScreen() {
       const name = user.user_metadata?.display_name || (user.email ? user.email.split('@')[0] : '')
       setDisplayUsername(name)
       setUsername(name)
+
+      setCurrentUserId(user.id)
 
       // Fetch role from profiles table
       const { data: profile } = await supabase
@@ -266,6 +273,27 @@ export default function SettingsScreen() {
       Alert.alert('Error', err.message || 'Could not delete user')
     } finally {
       setDeletingUserId(null)
+    }
+  }
+
+  const handleUpdateRole = async (userId: string, newRole: string, displayName: string) => {
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
+      if (!token) { Alert.alert('Error', 'Not authenticated.'); return }
+
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update-role', userId, role: newRole }),
+      })
+      const data = await res.json()
+      if (!res.ok) { Alert.alert('Error', data.error || 'Failed to update role'); return }
+
+      Alert.alert('Role updated', `${displayName} is now a${newRole === 'admin' ? 'n' : ''} ${newRole}.`)
+      loadUsers() // refresh list
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not update role')
     }
   }
 
@@ -483,32 +511,42 @@ export default function SettingsScreen() {
                 </View>
               )}
 
-              {/* Users list */}
+              {/* Users list — hide current user so you can't remove yourself */}
               <Text style={[styles.label, { color: theme.textSecondary }]}>Existing users</Text>
               {loadingUsers ? (
                 <ActivityIndicator size="small" color={theme.accent} style={{ marginVertical: 12 }} />
               ) : users.length === 0 ? (
                 <Text style={[styles.label, { color: theme.textMuted }]}>No users loaded.</Text>
               ) : (
-                users.map((u) => (
+                users.filter((u) => u.id !== currentUserId).map((u) => (
                   <View key={u.id} style={[styles.userRow, { borderBottomColor: theme.borderLight }]}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.userName, { color: theme.text }]}>{u.display_name || u.auth_email}</Text>
                       <Text style={[styles.userEmail, { color: theme.textMuted }]}>{u.auth_email} — {u.role}</Text>
                     </View>
-                    <Pressable
-                      style={[styles.deleteButton, deletingUserId === u.id && { opacity: 0.5 }]}
-                      onPress={() => handleDeleteUser(u.id, u.display_name || u.auth_email)}
-                      disabled={deletingUserId === u.id}
-                    >
-                      {deletingUserId === u.id ? (
-                        <ActivityIndicator size="small" color={theme.destructive} />
-                      ) : (
-                        <Text style={[styles.deleteButtonText, { color: theme.destructive }]}>
-                          {u.role === 'admin' ? '—' : 'Remove'}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Pressable
+                        style={[styles.roleToggle, { borderColor: theme.border }]}
+                        onPress={() => handleUpdateRole(u.id, u.role === 'admin' ? 'member' : 'admin', u.display_name || u.auth_email)}
+                      >
+                        <Text style={[styles.roleToggleText, { color: theme.textSecondary }]}>
+                          {u.role === 'admin' ? 'Demote' : 'Promote'}
                         </Text>
-                      )}
-                    </Pressable>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.deleteButton, deletingUserId === u.id && { opacity: 0.5 }]}
+                        onPress={() => handleDeleteUser(u.id, u.display_name || u.auth_email)}
+                        disabled={deletingUserId === u.id}
+                      >
+                        {deletingUserId === u.id ? (
+                          <ActivityIndicator size="small" color={theme.destructive} />
+                        ) : (
+                          <Text style={[styles.deleteButtonText, { color: theme.destructive }]}>
+                            Remove
+                          </Text>
+                        )}
+                      </Pressable>
+                    </View>
                   </View>
                 ))
               )}
@@ -582,6 +620,8 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 11, marginTop: 2 },
   deleteButton: { paddingHorizontal: 12, paddingVertical: 6 },
   deleteButtonText: { fontSize: 13, fontWeight: '600' },
+  roleToggle: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
+  roleToggleText: { fontSize: 12, fontWeight: '600' },
 
   logoutSection: { marginTop: 20, alignItems: 'center' },
   logoutButton: {
