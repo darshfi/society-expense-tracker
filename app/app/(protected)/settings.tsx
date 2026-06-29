@@ -44,10 +44,10 @@ export default function SettingsScreen() {
     }
   }
 
-  const handleChangeUsername = async () => {
+  const handleChangeDisplayName = async () => {
     const trimmed = username.trim()
     if (!trimmed) {
-      Alert.alert('Missing username', 'Please enter a username.')
+      Alert.alert('Missing name', 'Please enter a display name.')
       return
     }
     if (trimmed === displayUsername) return
@@ -60,11 +60,11 @@ export default function SettingsScreen() {
       if (error) {
         Alert.alert('Error', error.message)
       } else {
-        Alert.alert('Username updated', 'Your display name has been updated.')
+        Alert.alert('Display name updated', 'Your display name has been changed. Your login username stays the same — use your original username to sign in.')
         setDisplayUsername(trimmed)
       }
     } catch (err) {
-      Alert.alert('Error', 'Could not update username.')
+      Alert.alert('Error', 'Could not update display name.')
     } finally {
       setSavingUsername(false)
     }
@@ -155,7 +155,7 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Account</Text>
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
           {/* Username */}
-          <Text style={[styles.label, { color: theme.textSecondary }]}>Username</Text>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Display name</Text>
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.bg, borderColor: theme.border }]}
             value={username}
@@ -165,13 +165,13 @@ export default function SettingsScreen() {
           />
           <Pressable
             style={[styles.button, { backgroundColor: theme.accent }, savingUsername && { opacity: 0.6 }]}
-            onPress={handleChangeUsername}
+            onPress={handleChangeDisplayName}
             disabled={savingUsername}
           >
             {savingUsername ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Update username</Text>
+              <Text style={styles.buttonText}>Update display name</Text>
             )}
           </Pressable>
 
