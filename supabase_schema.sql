@@ -21,8 +21,6 @@ insert into categories (name) values
   ('Cleaning'),
   ('Repairs'),
   ('Gardening'),
-  ('Lift/Elevator'),
-  ('Insurance'),
   ('Events'),
   ('Other');
 
