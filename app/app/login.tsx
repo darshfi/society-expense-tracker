@@ -47,14 +47,39 @@ export default function LoginScreen() {
     }
 
     setLoading(true)
+    const trimmed = username.trim().toLowerCase()
     try {
-      const fakeEmail = `${username.trim().toLowerCase()}${FAKE_EMAIL_DOMAIN}`
-      const { error } = await supabase.auth.signInWithPassword({
+      // 1. Try direct login with {username}@society-tracker.local
+      const fakeEmail = `${trimmed}${FAKE_EMAIL_DOMAIN}`
+      let error
+      ;({ error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password,
-      })
+      }))
+
+      // 2. If that fails, look up display_name in profiles table
       if (error) {
-        Alert.alert('Login failed', error.message)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('auth_email')
+          .eq('display_name', trimmed)
+          .maybeSingle()
+
+        if (profile?.auth_email) {
+          const result = await supabase.auth.signInWithPassword({
+            email: profile.auth_email,
+            password,
+          })
+          error = result.error
+          if (!result.error) {
+            router.replace(PROTECTED_HOME)
+          }
+        }
+
+        // Still error after all attempts — show it
+        if (error) {
+          Alert.alert('Login failed', error.message)
+        }
       } else {
         router.replace(PROTECTED_HOME)
       }

@@ -153,9 +153,38 @@ create policy "Authenticated users can delete bills"
   using (bucket_id = 'bills');
 
 -- ============================================================
+-- 5. PROFILES TABLE (display_name → auth_email mapping)
+-- Used at login time to find the auth email for a given display
+-- name, so users who changed their display name can still log in
+-- with it. Populated by settings.tsx whenever display_name changes.
+-- ============================================================
+
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text unique,
+  auth_email text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table profiles enable row level security;
+
+-- Anyone (even unauthenticated) can read profiles — needed during login
+-- to look up which auth email corresponds to a display name.
+create policy "Anyone can read profiles for login"
+  on profiles for select
+  using (true);
+
+-- Authenticated users can upsert their own profile row
+create policy "Users can manage their own profile"
+  on profiles for all
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- ============================================================
 -- NOTE ON FUTURE ADMIN ROLES
 -- If you later want dad to have special permissions (e.g. only he
--- can delete entries), add a `role` column to a `profiles` table
+-- can delete entries), add a `role` column to the `profiles` table
 -- linked to auth.users, and change the "delete" policies above to
 -- check that role. Not needed for now since everyone has equal access.
 -- ============================================================

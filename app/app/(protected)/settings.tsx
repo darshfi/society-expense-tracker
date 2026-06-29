@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native'
 import { useRouter, Stack } from 'expo-router'
 import { supabase } from '../../lib/supabase'
@@ -60,7 +61,16 @@ export default function SettingsScreen() {
       if (error) {
         Alert.alert('Error', error.message)
       } else {
-        Alert.alert('Display name updated', 'Your display name has been changed. Your login username stays the same — use your original username to sign in.')
+        // Save the display_name → auth_email mapping so login can look it up
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.id && user?.email) {
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            display_name: trimmed,
+            auth_email: user.email,
+          }, { onConflict: 'id' })
+        }
+        Alert.alert('Display name updated', 'You can now sign in with either your display name or your original username.')
         setDisplayUsername(trimmed)
       }
     } catch (err) {
@@ -124,17 +134,25 @@ export default function SettingsScreen() {
   }
 
   const handleLogout = async () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          await supabase.auth.signOut()
-          router.replace('/login')
+    const doLogout = async () => {
+      await supabase.auth.signOut()
+      router.replace('/login')
+    }
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to log out?')) {
+        await doLogout()
+      }
+    } else {
+      Alert.alert('Log out', 'Are you sure you want to log out?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log out',
+          style: 'destructive',
+          onPress: doLogout,
         },
-      },
-    ])
+      ])
+    }
   }
 
   const handleResetToCurrentMonth = () => {
