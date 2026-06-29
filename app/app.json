@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Society Expense Tracker",
+    "slug": "society-expense-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "society-expense-tracker",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.darshfi.societyexpensetracker"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://siigtinwowbnguxpwhfv.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_s0G7WguFPJH_Oqs_9rOFoQ_GHiZkgxq",
+      "router": {},
+      "eas": {
+        "projectId": "ff1803fe-1225-4490-89f1-35560ee35224"
+      }
+    }
+  }
+}
